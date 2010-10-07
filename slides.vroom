@@ -1,0 +1,243 @@
+---- config
+title: TestML, Pegex, and the Acmeist Toolkit by Nick Patch
+width: 88
+height: 31
+indent: 4
+list_indent: 8
+skip: 0
+
+########################################################################################
+---- center
+. . . . . . . . . . . . . . . . . . . . . . . .
+.                               _     _       .
+.    TestML, Pegex, and the    (_)   | |      .
+.      __ _  ___ _ __ ___   ___ _ ___| |_     .
+.     / _` |/ __| '_ ` _ \ / _ \ / __| __|    .
+.    ( (_| | (__| | | | | |  __/ \__ \ |_     .
+.     \__,_|\___|_| |_| |_|\___|_|___/\__|    .
+.                                             .
+.    Toolkit                by Nick Patch     .
+. . . . . . . . . . . . . . . . . . . . . . . .
+
+Boston.pm - 10 August 2010
+
+----
+== Acme::what?
+
+What is Acmeism?
+
++* Acmeism is *not* the Acme namespace!
++* nor is it affiliated with the Acme Corporation
+
++* Acmeism is the belief in implementing ideas in a language-neutral way
++* The more reusable resources between module implementations in different languages,
+  the better
++* Programming languages should not divide communities
++* A believer in these ideas is an Acmeist!
+
+----
+== Acme::why?
+
+Why should I care about other languages?
+
++* Perl 5 and CPAN have benefited greatly by ideas borrowed from other languages
++* As have other languages from Perl and CPAN modules
++* When I new idea like YAML or JSON is released, massive duplication of resources takes
+  place while different language implementors create their own:
++    * test suite
++    * parser
++    * documentation
++* Testing, parsing, and docs in Perl 5 and 6 are different enough to consider them
+  different languages
++* We can waste less time and create better software by sharing resources in a language-
+  neutral way
+
+----
+== Acme::how?
+
+A cross-language Acmeist toolkit is currently in development and includes:
+
++* TestML: a testing meta language
++* Pegex: a parsing framework
++* Stardoc: a documentation framework
+
+----
+== Acme::who?
+
+Who thought up this wacky idea?
+
++Ingy döt Net, a co-author of the YAML specification and creator of Kwiki, Jemplate, and
+Wikiwyg, among other projects, coined the term Acmeism and started the core projects
+mentioned.
+
++I attended his talk on Acmeism at YAPC::NA 2010 in Columbus, Ohio, and quickly fell in
+love with TestML, only to be further drawn in by the Acmeist agenda.
+
++We met up after the talk and have been collaborating and hacking on these projects
+since.
+
++ingy++
+
+----
+== TestML Is the Esperanto of Testing Frameworks
+
++* TestML is not a replacement for your existing test framework
++* It provides a generic testing meta language
++* A test file in TestML format can be used as-is among different languages and testing
+  frameworks using different custom bridge files
+
++Jes, mi parolas Esperanton ;)
+
+----
+00:07 < vanjuggler2> ingy - the esperanto guy is the perfect catch for this kind of
+                     project.
++03:14 <@ingy> vanjuggler2: patch is awesome. he got me into perl6, a journey which has
+              spawned pegex
++03:14 < vanjuggler2> pexcellent
++03:15 <@ingy> vanjuggler2: pegextreme!
++03:16 < vanjuggler2> ingy: patch taught me all i know about ethiopian food
++03:17 <@ingy> vanjuggler2: nice. he's a man of many talents
+
+
++Unfortunately, we don't have time to discuss Ethiopian cuisine tonight.
++Pizza will have to suffice. :)
+
+---- perl
+# Bridge.pm in Perl 5
+
+package t::Bridge;
+use strict;
+use warnings;
+use JSYNC;
+use YAML::XS;
+
+sub load_jsync {
+    my ($self) = @_;
+    return JSYNC::load($self->value);
+}
+
+sub dump_jsync {
+    my ($self) = @_;
+    return JSYNC::dump($self->value);
+}
+
+sub load_yaml {
+    my ($self) = @_;
+    return YAML::XS::Load($self->value);
+}
+
+sub dump_yaml {
+    my ($self) = @_;
+    return YAML::XS::Dump($self->value);
+}
+
+---- perl6
+# Bridge.pm in Perl 6
+
+module t::Bridge;
+
+
+use JSYNC;
+use YAML;
+
+sub load_jsync ($this) {
+    return JSYNC::load($this.value);
+}
+
+
+sub dump_jsync ($this) {
+    return JSYNC::dump($this.value);
+}
+
+
+sub load_yaml ($this) {
+    return YAML::load($this.value);
+}
+
+
+sub dump_yaml ($this) {
+    return YAML::dump($this.value);
+}
+
+---- perl
+# jsync.t in Perl 5
+
+use TestML::Runner::TAP;
+
+TestML::Runner::TAP->new(
+    document => 'jsync.tml',
+    bridge   => 't::Bridge',
+)->run;
+
+---- perl6
+# jsync.t in Perl 6
+
+use TestML::Runner::TAP;
+
+TestML::Runner::TAP.new(
+    document => 'jsync.tml',
+    bridge   => 't::Bridge',
+).run;
+
+---- yaml
+    # jsync.tml
+
+    %TestML: 1.0
+    %Title: JSYNC
+    %Plan: 3
+    %PointMarker: +++
+
+    *jsync.load_jsync.dump_yaml == *yaml;
+    *yaml.load_yaml.dump_jsync  == *jsync;
+
+    === Plain mapping
+    +++ jsync: {"foo":1,"bar":"2"}
+    +++ yaml
+    ---
+    foo: 1
+    bar: 2
+
+    === Nulls
+    +++ jsync: [null,{"x":null}]
+    +++ yaml
+    ---
+    - ~
+    - x: ~
+
+    === Recursive Reference
+    +++ jsync: {"&":"1","x":"*1"}
+    +++ yaml
+    --- &1
+    x: *1
+
+----
+== Let's look at some Perl 6 Grammars!
+
+----
+== Now let's look at some Pegex!
+
+----
+== Let's head over to GitHub!
+
+----
+== Status
+
+When can we use it?
+
++* TestML is currently implemented in Perl 5, Perl 6, and Python
++* TestML tests are used for JSYNC and TestML itself on CPAN right now
++* ... but the spec is not final
++* %TestML: X.X # should help with that
++* Pegex is currently only implemented in Perl 5 and used for Perl 5 TestML
++* The spec is currently in flux
+
+----
+== Resources
+
+* TestML:  testml.org,  #testml
+* Pegex:   pegex.org,   #pegex
+* JSYNC:   jsync.org,   #jsync
+* Acmeism: acmeism.org, #acmeism
+* Perl 6:  perl6.org,   #perl6
+
+Note: All listed IRC channels are on irc.freenode.net, not irc.perl.org with #boston.pm
