@@ -1,12 +1,18 @@
 ---- config
 title: 'TestML: Write Once, Test Everywhere! by Nick Patch'
-width: 88
+width: 72
 height: 31
 indent: 4
 list_indent: 8
 skip: 0
+vimrc: |
+    set wrap
+    set linebreak
+    set nolist
+    set textwidth=0
+    set wrapmargin=0
+    map GF /\.\.<CR>v$gf
 
-########################################################################################
 ---- center
 TestML: Write Once, Test Everywhere!
 
@@ -17,9 +23,395 @@ Pittsburgh Perl Workshop
 10 October 2010
 
 ----
+== What Is TestML?
+
+
+TestML is ...
+
+* A meta language for writing unit tests
++* Programming language-nuetral
++* Designed to be implemented in any language
++* Write reusable test suites for any language
+  ... or any test framework
++* Not a replacement for other test frameworks
++* The Esperanto of unit tests
+
++== Jes, mi parolas Esperanton!
+
+----
+== Why TestML?
+
+
+* DRY
++* Data driven
++* Test::Base
+
+----
+== History
+
+
+* Test::Base (72 CPAN dependents)
++* Ingy
++* YAPC::NA 2010
++* Now in Perl 5, Perl 6, and Python
+
+----
+== Uses
+
+
+* Writing a module or application in multiple different languages
++* Translating an existing module to another language
++* Convincing others to translate your project to their language ;)
++* Dual client- and server-side validation testing
+
+
+----
+== Bridge Class
+
+
+The bridge class contains transform functions for testing that must be implemented in each language.
+
++This is commonly just glue to standardise the interface of different project implementations.
+
+* JSON::to_json
+* JSON::XS::encode_json
+* JSON::Tiny::to-json
+* json.dumps
+
+---- perl5
+# t/Bridge.pm for JSON in Perl 5
+
+package t::Bridge;
+use JSON;
+use YAML::XS;
+
+sub to_json   { JSON::to_json   shift->value }
+sub from_json { JSON::from_json shift->value }
+sub to_yaml   { YAML::XS::Dump  shift->value }
+sub from_yaml { YAML::XS::Load  shift->value }
+
+---- perl5
+# t/Bridge.pm for JSON::XS in Perl 5
+
+package t::Bridge;
+use JSON::XS;
+use YAML::XS;
+
+sub to_json   { JSON::XS::encode_json shift->value }
+sub from_json { JSON::XS::decode_json shift->value }
+sub to_yaml   { YAML::XS::Dump        shift->value }
+sub from_yaml { YAML::XS::Load        shift->value }
+
+---- perl6
+# t/Bridge.pm for JSON in Perl 6
+
+module t::Bridge;
+use JSON::Tiny;
+use YAML;
+
+sub to_json   ($p) { JSON::Tiny::to-json   $p.value }
+sub from_json ($p) { JSON::Tiny::from-json $p.value }
+sub to_yaml   ($p) { YAML::dump            $p.value }
+sub from_yaml ($p) { YAML::load            $p.value }
+
+----
+== Test File
+
+The test file loads up the TestML module with your bridge class and TestML documents.
+
+---- perl5
+# t/json.t for JSON or JSON::XS in Perl 5
+
+#!/usr/bin/perl
+use TestML::Runner::TAP;
+
+TestML::Runner::TAP->new(
+    bridge => 't::Bridge',
+    testml => 'testml/json.tml',
+)->run;
+
+---- perl6
+# t/json.t for JSON in Perl 6
+
+use v6;
+use TestML::Runner::TAP;
+
+TestML::Runner::TAP.new(
+    bridge => 't::Bridge',
+    testml => 'testml/json.tml',
+).run;
+
+---- perl5
+# t/json.t in Perl 5 (alternate syntax)
+
+#!/usr/bin/perl
+use TestML -run,
+    -bridge => 't::Bridge',
+    -testml => 'testml/json.tml';
+
+----
+== TestML Document
+
+
+Here comes the file that we only need one version for everything...
+
+---- yaml
+    # t/testml/json.tml
+
+    %TestML 1.0
+    %PointMarker +++
+
+    Title = 'JSON';
+    Plan  = 2;
+
+    *json.from_json.to_yaml == *yaml;
+    *yaml.from_yaml.to_json == *json;
+
+    === Array
+    +++ json: ["sauerkraut","durian","natto"]
+    +++ yaml
+    ---
+    - sauerkraut
+    - durian
+    - natto
+
+    === Object
+    +++ json: {"perl":"10","wall":"6"}
+    +++ yaml
+    ---
+    perl: 10
+    wall: 6
+
+----
+== Examples
+
+Let's take a look at some of the TestML documents used for the TestML module itself ...
+
+---- yaml
+%TestML 1.0
+
+Title = 'Transform functions with arguments';
+Plan  = 3;
+
+*what.combine(*who)                  == *greeting;
+*what.combine('and', *else)          == *greeting;
+*what.combine('and', *else.my_upper) == *upper_greeting;
+
+=== Dear John
+--- what: Dear
+--- who: John
+--- greeting: Dear John
+
+=== Greetings and Salutations
+--- what: Greetings
+--- else: Salutations
+--- greeting: Greetings and Salutations
+--- upper_greeting: Greetings and SALUTATIONS
+
+---- yaml
+%TestML 1.0
+
+Title = 'Assertions';
+Plan  = 6;
+
+Label = 'EQ tests';
+'The cat in the hat'.EQ('The cat in the hat');
+'The cat in the hat' == 'The cat in the hat';
+
+Label = 'HAS tests';
+'The cat in the hat'.HAS('cat');
+'The cat in the hat' ~~ 'hat';
+
+Label = 'OK tests';
+'The cat in the hat'.OK;
+'The cat in the hat'.OK();
+
+---- yaml
+%TestML 1.0
+
+Title = 'External data blocks';
+Plan  = 4;
+
+*foo == *bar;
+
+%Include external2.tml
+%Include external1.tml
+
+---- yaml
+# t/testml/external1.tml
+
+=== Test 1
+--- foo: 98122
+--- bar: 98122
+=== Test 11
+--- foo: 90210
+--- bar: 90210
+=== Test 111
+--- foo: 60067
+--- bar: 60067
+
+---- yaml
+# t/testml/external2.tml
+
+=== Test 2
+--- foo: 02134
+--- bar: 02134
+
+---- yaml
+    %TestML 1.0
+    %BlockMarker +++
+    %PointMarker ~~~
+
+    Title = 'Markers';
+    Plan  = 2;
+
+    *foo == *bar;
+
+    +++ Test One
+    ~~~ foo: Hello
+    ~~~ bar: Hello
+
+    +++ Test Two
+    ~~~ foo
+    O HAI
+    ~~~ bar
+    O HAI
+
+---- yaml
+%TestML 1.0
+
+Title = 'Functions';
+Plan  = 21;
+
+Label = 'Fruity Tests';
+
+{
+    Label = 'Anonymous function never called';
+    True == False;
+};
+
+test1 = (f, c, t) {
+    List(f, '->', c).Join  == t;
+    t.Strip(f).Strip('->') == c;
+    t.Strip('->')          == List(f, c).Join;
+};
+
+test1.Type == 'Func';
+
+Label = '$BlockLabel';
+
+test1(*fruit, *color, *thing);
+
+test2 = {
+    thing ~~ color;
+};
+ 
+test2(*color, *thing);
+
+test3 = (a, b, c) {
+    f1(a) == b;
+    f2(a) == c;
+};
+
+test3(*input, *output1, *output2);
+
+Label = 'Passing functions as objects';
+
+test4 = (func, num) {
+    func.Type == 'Func';
+    func(num);
+};
+
+test5 = (num) {
+    num == 42;
+};
+
+test4(test5, 42);
+
+=== Red Apple
+--- fruit: apple
+--- color: red
+--- thing: apple->red
+
+=== Orange Orange
+--- fruit: orange
+--- color: orange
+--- thing: orange->orange
+
+=== Green Grape
+--- fruit: grape
+--- color: green
+--- thing: grape->green
+
+=== One
+--- input: 1
+--- output1: 43
+--- output2: 2
+
+=== Two
+--- input: 2
+--- output1: 86
+--- output2: 6
+
+=== Three
+--- input: 5
+--- output1: 215
+--- output2: 30
+
+----
+== The JSYNC Module
+
+
+Let's take a look at the test suite for JSYNC:
+
+../jsync-pm/t
+
+----
+== Projects Using TestML
+
+
+* TestML                   - Perl 5 | Perl 6 | Python
+* Pegex                    - Perl 5 |        | Python
+* YAML                     -        | Perl 6 |
+* JSYNC                    - Perl 5 | Perl 6 |
+* Lingua::Conlang::Numbers - Perl 5 |        |
+
+
++The Perl 5 modules are on CPAN.
+
+The YAML module is bundled with Rakudo Star.
+
++Let's get TestML in there!
+
+----
+== Source Code Repositories
+
+Here's one way to share your project with others:
+
++* Create a repository for your module: acme-buffy-pm
++* And one for your tests: acme-buffy-tml
++* And if you're using Pegex: acme-buffy-pgx
++* And now the Python folks will get at it! acme-buffy-py
+
+----
+== Future
+
+
+* Update Perl 6 and Python
+* Implement in more languages (JavaScript, Ruby, PHP, etc.)
+* Support more testing frameworks
+
+----
 == Resources
 
-* Web: testml.org
-* Git: github.com/ingydotnet/testml-pm
-* IRC: #testml on irc.freenade.net
+
+* Web:    testml.org
+* Git:    github.com/ingydotnet/testml-pm
+* IRC:    #testml on irc.freenode.net (my nick is patch)
 * Slides: patch.github.com
+
+
++== Questions?
+
+
++== The End
