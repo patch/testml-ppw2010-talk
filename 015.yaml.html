@@ -1,0 +1,59 @@
+<html>
+<head>
+<title>015.yaml</title>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<script>
+function navigate(e) {
+    var keynum = (window.event) // IE
+        ? e.keyCode
+        : e.which;
+    if (keynum == 8) {
+        window.location = "014" + ".html";
+        return false;
+    }
+    if (keynum == 13 || keynum == 32) {
+        window.location = "016" + ".html";
+        return false;
+    }
+    if (keynum == 73 || keynum == 105) {
+        window.location = "index.html";
+        return false;
+    }
+    return true;
+}
+</script>
+</head>
+<body onkeypress="return navigate(event)">
+<pre>
+
+        # t/testml/json.tml
+    
+        %TestML 1.0
+        %PointMarker +++
+    
+        Title = 'JSON';
+        Plan  = 2;
+    
+        *json.from_json.to_yaml == *yaml;
+        *yaml.from_yaml.to_json == *json;
+    
+        === Array
+        +++ json: [&quot;sauerkraut&quot;,&quot;durian&quot;,&quot;natto&quot;]
+        +++ yaml
+        ---
+        - sauerkraut
+        - durian
+        - natto
+    
+        === Object
+        +++ json: {&quot;perl&quot;:&quot;10&quot;,&quot;wall&quot;:&quot;6&quot;}
+        +++ yaml
+        ---
+        perl: 10
+        wall: 6
+
+
+
+
+</pre>
+</body>

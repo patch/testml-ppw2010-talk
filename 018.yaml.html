@@ -1,0 +1,59 @@
+<html>
+<head>
+<title>018.yaml</title>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<script>
+function navigate(e) {
+    var keynum = (window.event) // IE
+        ? e.keyCode
+        : e.which;
+    if (keynum == 8) {
+        window.location = "017.yaml" + ".html";
+        return false;
+    }
+    if (keynum == 13 || keynum == 32) {
+        window.location = "019.yaml" + ".html";
+        return false;
+    }
+    if (keynum == 73 || keynum == 105) {
+        window.location = "index.html";
+        return false;
+    }
+    return true;
+}
+</script>
+</head>
+<body onkeypress="return navigate(event)">
+<pre>
+
+
+
+
+
+    %TestML 1.0
+    
+    Title = 'Assertions';
+    Plan  = 6;
+    
+    Label = 'EQ tests';
+    'The cat in the hat'.EQ('The cat in the hat');
+    'The cat in the hat' == 'The cat in the hat';
+    
+    Label = 'HAS tests';
+    'The cat in the hat'.HAS('cat');
+    'The cat in the hat' ~~ 'hat';
+    
+    Label = 'OK tests';
+    'The cat in the hat'.OK;
+    'The cat in the hat'.OK();
+
+
+
+
+
+
+
+
+
+</pre>
+</body>
